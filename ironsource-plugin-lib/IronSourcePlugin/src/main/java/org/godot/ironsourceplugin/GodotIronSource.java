@@ -211,7 +211,7 @@ public class GodotIronSource extends GodotPlugin {
     }
 
     @UsedByGodot
-    public void loadRewardedAd()
+    public void loadRewarded()
     {
         activity.runOnUiThread(() -> {
             mRewardedAd.loadAd();

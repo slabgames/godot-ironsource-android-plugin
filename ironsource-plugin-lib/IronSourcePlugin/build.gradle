@@ -9,7 +9,7 @@ android {
     namespace = "org.godot.godotironsource"
 
     defaultConfig {
-        minSdk 19
+        minSdk 23
         targetSdk 35
 
 

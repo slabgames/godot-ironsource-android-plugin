@@ -19,14 +19,20 @@ import com.ironsource.mediationsdk.integration.IntegrationHelper;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.model.Placement;
 import com.ironsource.mediationsdk.sdk.LevelPlayRewardedVideoListener;
+import com.unity3d.mediation.LevelPlay;
 import com.unity3d.mediation.LevelPlayAdError;
 import com.unity3d.mediation.LevelPlayAdInfo;
 import com.unity3d.mediation.LevelPlayAdSize;
+import com.unity3d.mediation.LevelPlayConfiguration;
+import com.unity3d.mediation.LevelPlayInitError;
+import com.unity3d.mediation.LevelPlayInitListener;
+import com.unity3d.mediation.LevelPlayInitRequest;
 import com.unity3d.mediation.banner.LevelPlayBannerAdView;
 import com.unity3d.mediation.banner.LevelPlayBannerAdViewListener;
 import com.unity3d.mediation.interstitial.LevelPlayInterstitialAd;
 import com.unity3d.mediation.interstitial.LevelPlayInterstitialAdListener;
 import com.unity3d.mediation.rewarded.LevelPlayReward;
+import com.unity3d.mediation.rewarded.LevelPlayRewardedAd;
 import com.unity3d.mediation.rewarded.LevelPlayRewardedAdListener;
 //import com.ironsource.mediationsdk.sdk.BannerListener;
 //import com.ironsource.mediationsdk.sdk.InterstitialListener;
@@ -37,6 +43,8 @@ import org.godotengine.godot.plugin.GodotPlugin;
 import org.godotengine.godot.plugin.SignalInfo;
 import org.godotengine.godot.plugin.UsedByGodot;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -45,6 +53,7 @@ public class GodotIronSource extends GodotPlugin {
 
     private LevelPlayBannerAdView levelPlayBanner;
     private LevelPlayInterstitialAd mInterstitialAd;
+    private LevelPlayRewardedAd mRewardedAd;
     private String appKey = null;
     private boolean isInitialized = false;
     private FrameLayout layout = null;
@@ -123,69 +132,104 @@ public class GodotIronSource extends GodotPlugin {
         isInitialized = true;
         IronSource.setConsent(consent);
         this.appKey = appKey;
+        List<LevelPlay.AdFormat> legacyAdFormats = List.of(LevelPlay.AdFormat.REWARDED);
+        LevelPlayInitRequest initRequest = new LevelPlayInitRequest.Builder(appKey)
+                .withLegacyAdFormats(legacyAdFormats)
+//                .withUserId("UserID")
+                .build();
+        LevelPlayInitListener initListener = new LevelPlayInitListener() {
+            @Override
+            public void onInitFailed(@NonNull LevelPlayInitError error) {
+                //Recommended to initialize again
+            }
+            @Override
+            public void onInitSuccess(@NonNull LevelPlayConfiguration configuration) {
+                //Create ad objects and load ads
+            }
+        };
+        LevelPlay.init(Objects.requireNonNull(getActivity()), initRequest, initListener);
     }
 
 
     @UsedByGodot
-    public void initRewarded(){
+    public void initRewarded(String rewarded_id){
         if (!isInitialized){
             Log.d(TAG, "ERROR : You should call init first");
             emitSignal("on_plugin_error","You should call init first");
             return;
         }
         activity.runOnUiThread(() -> {
-            LevelPlayRewardedVideoListener rewardedVideoListener = new LevelPlayRewardedVideoListener() {
+            LevelPlayRewardedAdListener rewardedVideoListener = new LevelPlayRewardedAdListener() {
                 @Override
-                public void onAdOpened(AdInfo adInfo) {
-                    emitSignal("on_rewarded_opened");
+                public void onAdClicked(@NonNull LevelPlayAdInfo levelPlayAdInfo) {
+                    LevelPlayRewardedAdListener.super.onAdClicked(levelPlayAdInfo);
                 }
 
                 @Override
-                public void onAdShowFailed(IronSourceError ironSourceError, AdInfo adInfo) {
-                    emitSignal("on_plugin_error",ironSourceError.getErrorMessage());
-                    Log.e(TAG, "onRewardedVideoAdShowFailed: " + ironSourceError.getErrorMessage());
-                }
-
-                @Override
-                public void onAdClicked(Placement placement, AdInfo adInfo) {
-
-                }
-
-                @Override
-                public void onAdRewarded(Placement placement, AdInfo adInfo) {
-                    emitSignal("on_rewarded");
-                }
-
-                @Override
-                public void onAdClosed(AdInfo adInfo) {
+                public void onAdClosed(@NonNull LevelPlayAdInfo levelPlayAdInfo) {
+                    LevelPlayRewardedAdListener.super.onAdClosed(levelPlayAdInfo);
                     emitSignal("on_rewarded_closed");
                 }
 
                 @Override
-                public void onAdAvailable(AdInfo adInfo) {
-                    emitSignal("on_rewarded_availability_changed",true);
+                public void onAdDisplayFailed(@NonNull LevelPlayAdError levelPlayAdError, @NonNull LevelPlayAdInfo levelPlayAdInfo) {
+                    LevelPlayRewardedAdListener.super.onAdDisplayFailed(levelPlayAdError, levelPlayAdInfo);
+                    emitSignal("on_plugin_error",levelPlayAdError.getErrorMessage());
+                    Log.e(TAG, "onRewardedVideoAdShowFailed: " + levelPlayAdError.getErrorMessage());
                 }
 
                 @Override
-                public void onAdUnavailable() {
-                    emitSignal("on_rewarded_availability_changed",false);
+                public void onAdInfoChanged(@NonNull LevelPlayAdInfo levelPlayAdInfo) {
+                    LevelPlayRewardedAdListener.super.onAdInfoChanged(levelPlayAdInfo);
                 }
 
+                @Override
+                public void onAdRewarded(@NonNull LevelPlayReward levelPlayReward, @NonNull LevelPlayAdInfo levelPlayAdInfo) {
+                    emitSignal("on_rewarded");
+                }
 
+                @Override
+                public void onAdDisplayed(@NonNull LevelPlayAdInfo levelPlayAdInfo) {
+                    emitSignal("on_rewarded_opened");
+                }
+
+                @Override
+                public void onAdLoadFailed(@NonNull LevelPlayAdError levelPlayAdError) {
+
+                }
+
+                @Override
+                public void onAdLoaded(@NonNull LevelPlayAdInfo levelPlayAdInfo) {
+                    emitSignal("on_rewarded_availability_changed",true);
+                }
             };
-            IronSource.setLevelPlayRewardedVideoListener((LevelPlayRewardedVideoListener) rewardedVideoListener);
-            IronSource.init(getActivity(),appKey, IronSource.AD_UNIT.REWARDED_VIDEO);
+            mRewardedAd.setListener(rewardedVideoListener);
+            mRewardedAd = new LevelPlayRewardedAd(rewarded_id);
+            mRewardedAd.loadAd();
+
+        });
+    }
+
+    @UsedByGodot
+    public void loadRewardedAd()
+    {
+        activity.runOnUiThread(() -> {
+            mRewardedAd.loadAd();
         });
     }
 
 
     @UsedByGodot
     public void showRewarded(){
-        if (!IronSource.isRewardedVideoAvailable()){
+        if (!mRewardedAd.isAdReady()){
             emitSignal("on_plugin_error","Rewarded is NOT READY");
             return;
         }
-        IronSource.showRewardedVideo();
+
+        activity.runOnUiThread(() -> {
+            mRewardedAd.showAd(Objects.requireNonNull(getActivity()));
+        });
+
     }
 
     
@@ -243,12 +287,9 @@ public class GodotIronSource extends GodotPlugin {
                     LevelPlayInterstitialAdListener.super.onAdClicked(levelPlayAdInfo);
                 }
 
-
-
             };
             mInterstitialAd = new LevelPlayInterstitialAd(interstitialId);
             mInterstitialAd.setListener(interstitialListener);
-//            IronSource.init(activity,appKey, IronSource.AD_UNIT.INTERSTITIAL);
             loadInterstitial();
         });
     }
@@ -261,19 +302,24 @@ public class GodotIronSource extends GodotPlugin {
             emitSignal("on_plugin_error","You should call init first");
             return;
         }
-        mInterstitialAd.loadAd();
+        activity.runOnUiThread(() -> {
+            mInterstitialAd.loadAd();
+        });
+
     }
 
 
     @UsedByGodot
     public void showInterstitial(){
         // Check that ad is ready and that the placement is not capped
-        if (mInterstitialAd.isAdReady()) {
-            mInterstitialAd.showAd(Objects.requireNonNull(getActivity()));
-        }
-        else{
-            emitSignal("on_plugin_error","Interstitial is NOT READY");
-        }
+        activity.runOnUiThread(() -> {
+            if (mInterstitialAd.isAdReady()) {
+                mInterstitialAd.showAd(Objects.requireNonNull(getActivity()));
+            } else {
+                emitSignal("on_plugin_error", "Interstitial is NOT READY");
+            }
+        });
+
 
     }
 
@@ -360,7 +406,10 @@ public class GodotIronSource extends GodotPlugin {
         if(levelPlayBanner == null){
             return;
         }
-        levelPlayBanner.setVisibility(View.VISIBLE);
+        activity.runOnUiThread(() -> {
+            levelPlayBanner.setVisibility(View.VISIBLE);
+        });
+
     }
 
     
@@ -369,13 +418,20 @@ public class GodotIronSource extends GodotPlugin {
         if(levelPlayBanner == null){
             return;
         }
-        levelPlayBanner.setVisibility(View.INVISIBLE);
+        activity.runOnUiThread(() -> {
+            levelPlayBanner.setVisibility(View.INVISIBLE);
+        });
+
+
     }
 
 
     @Override
     public void onMainDestroy() {
-        levelPlayBanner.destroy();
+        activity.runOnUiThread( () ->{
+            levelPlayBanner.destroy();
+        });
+
         super.onMainDestroy();
     }
 }

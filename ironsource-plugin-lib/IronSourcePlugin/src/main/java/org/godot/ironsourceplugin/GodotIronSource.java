@@ -207,8 +207,9 @@ public class GodotIronSource extends GodotPlugin {
                     emitSignal("on_rewarded_availability_changed",true);
                 }
             };
-            mRewardedAd.setListener(rewardedVideoListener);
+
             mRewardedAd = new LevelPlayRewardedAd(rewarded_id);
+            mRewardedAd.setListener(rewardedVideoListener);
             mRewardedAd.loadAd();
 
         });

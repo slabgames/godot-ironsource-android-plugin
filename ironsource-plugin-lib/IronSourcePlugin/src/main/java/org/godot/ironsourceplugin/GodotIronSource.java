@@ -87,17 +87,21 @@ public class GodotIronSource extends GodotPlugin {
     @Override
     public void onMainPause() {
         super.onMainPause();
-        IronSource.onPause(getActivity());
-        levelPlayBanner.pauseAutoRefresh();
+        if(activity!=null)
+            IronSource.onPause(activity);
+        if (levelPlayBanner!=null)
+            levelPlayBanner.pauseAutoRefresh();
     }
 
     
     @Override
     public void onMainResume() {
         super.onMainResume();
-        IronSource.onResume(getActivity());
+        if(activity!=null)
+            IronSource.onResume(activity);
         // Resume refresh
-        levelPlayBanner.resumeAutoRefresh();
+        if (levelPlayBanner!=null)
+            levelPlayBanner.resumeAutoRefresh();
     }
 
     @NonNull

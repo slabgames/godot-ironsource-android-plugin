@@ -11,14 +11,8 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.ironsource.mediationsdk.ISBannerSize;
 import com.ironsource.mediationsdk.IronSource;
-import com.ironsource.mediationsdk.IronSourceBannerLayout;
-import com.ironsource.mediationsdk.adunit.adapter.utility.AdInfo;
 import com.ironsource.mediationsdk.integration.IntegrationHelper;
-import com.ironsource.mediationsdk.logger.IronSourceError;
-import com.ironsource.mediationsdk.model.Placement;
-import com.ironsource.mediationsdk.sdk.LevelPlayRewardedVideoListener;
 import com.unity3d.mediation.LevelPlay;
 import com.unity3d.mediation.LevelPlayAdError;
 import com.unity3d.mediation.LevelPlayAdInfo;
@@ -43,7 +37,6 @@ import org.godotengine.godot.plugin.GodotPlugin;
 import org.godotengine.godot.plugin.SignalInfo;
 import org.godotengine.godot.plugin.UsedByGodot;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -51,7 +44,7 @@ import java.util.Set;
 public class GodotIronSource extends GodotPlugin {
     public static final String TAG = "GodotIronSource";
 
-    private LevelPlayBannerAdView levelPlayBanner;
+    private LevelPlayBannerAdView mlevelPlayBanner;
     private LevelPlayInterstitialAd mInterstitialAd;
     private LevelPlayRewardedAd mRewardedAd;
     private String appKey = null;
@@ -89,8 +82,8 @@ public class GodotIronSource extends GodotPlugin {
         super.onMainPause();
         if(activity!=null)
             IronSource.onPause(activity);
-        if (levelPlayBanner!=null)
-            levelPlayBanner.pauseAutoRefresh();
+        if (mlevelPlayBanner !=null)
+            mlevelPlayBanner.pauseAutoRefresh();
     }
 
     
@@ -100,8 +93,8 @@ public class GodotIronSource extends GodotPlugin {
         if(activity!=null)
             IronSource.onResume(activity);
         // Resume refresh
-        if (levelPlayBanner!=null)
-            levelPlayBanner.resumeAutoRefresh();
+        if (mlevelPlayBanner !=null)
+            mlevelPlayBanner.resumeAutoRefresh();
     }
 
     @NonNull
@@ -400,28 +393,28 @@ public class GodotIronSource extends GodotPlugin {
 
             };
             levelPlayBanner.setBannerListener(bannerListener);
-
-
+            this.mlevelPlayBanner = levelPlayBanner;
+            loadBanner();
         });
     }
 
     @UsedByGodot
     public void loadBanner()
     {
-        if(levelPlayBanner == null){
+        if(mlevelPlayBanner == null){
             return;
         }
-        levelPlayBanner.loadAd();
+        mlevelPlayBanner.loadAd();
     }
 
 
     @UsedByGodot
     public void showBanner(){
-        if(levelPlayBanner == null){
+        if(mlevelPlayBanner == null){
             return;
         }
         activity.runOnUiThread(() -> {
-            levelPlayBanner.setVisibility(View.VISIBLE);
+            mlevelPlayBanner.setVisibility(View.VISIBLE);
         });
 
     }
@@ -429,11 +422,11 @@ public class GodotIronSource extends GodotPlugin {
     
     @UsedByGodot
     public void hideBanner() {
-        if(levelPlayBanner == null){
+        if(mlevelPlayBanner == null){
             return;
         }
         activity.runOnUiThread(() -> {
-            levelPlayBanner.setVisibility(View.INVISIBLE);
+            mlevelPlayBanner.setVisibility(View.INVISIBLE);
         });
 
 
@@ -443,7 +436,7 @@ public class GodotIronSource extends GodotPlugin {
     @Override
     public void onMainDestroy() {
         activity.runOnUiThread( () ->{
-            levelPlayBanner.destroy();
+            mlevelPlayBanner.destroy();
         });
 
         super.onMainDestroy();

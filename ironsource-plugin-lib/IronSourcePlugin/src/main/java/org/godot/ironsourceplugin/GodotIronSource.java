@@ -400,9 +400,18 @@ public class GodotIronSource extends GodotPlugin {
 
             };
             levelPlayBanner.setBannerListener(bannerListener);
-            levelPlayBanner.loadAd();
+
 
         });
+    }
+
+    @UsedByGodot
+    public void loadBanner()
+    {
+        if(levelPlayBanner == null){
+            return;
+        }
+        levelPlayBanner.loadAd();
     }
 
 

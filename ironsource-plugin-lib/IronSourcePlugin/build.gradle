@@ -69,6 +69,9 @@ dependencies {
 // Add InMobi Network
     implementation 'com.unity3d.ads-mediation:inmobi-adapter:4.3.29'
     implementation 'com.inmobi.monetization:inmobi-ads-kotlin:10.8.2'
+    // Add Vungle Network
+    implementation 'com.unity3d.ads-mediation:vungle-adapter:4.3.29'
+    implementation 'com.vungle:vungle-ads:7.4.3'
 // Add Meta Audience Network
     implementation 'com.unity3d.ads-mediation:facebook-adapter:4.3.49'
     implementation 'com.facebook.android:audience-network-sdk:6.19.0'

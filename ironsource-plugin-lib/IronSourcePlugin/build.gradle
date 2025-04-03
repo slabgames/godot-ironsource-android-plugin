@@ -64,7 +64,7 @@ dependencies {
     implementation 'com.unity3d.ads-mediation:fyber-adapter:4.3.37'
     implementation "com.fyber:marketplace-sdk:8.3.6"
 // Add AdMob and Ad Manager Network
-    implementation 'com.google.android.gms:play-services-ads:24.1.0'
+    implementation 'com.google.android.gms:play-services-ads:23.6.0'
     implementation 'com.unity3d.ads-mediation:admob-adapter:4.3.49'
 // Add InMobi Network
     implementation 'com.unity3d.ads-mediation:inmobi-adapter:4.3.29'

@@ -104,6 +104,8 @@ public class GodotIronSource extends GodotPlugin {
 
         // General
         signals.add(new SignalInfo("on_plugin_error", String.class));
+        signals.add(new SignalInfo("on_inited"));
+        signals.add(new SignalInfo("on_init_failed", String.class));
 
         // Rewarded
         signals.add(new SignalInfo("on_rewarded_availability_changed",Boolean.class));
@@ -125,26 +127,36 @@ public class GodotIronSource extends GodotPlugin {
     }
 
     @UsedByGodot
-    public void init(String appKey , boolean consent){
-        isInitialized = true;
+    public void init(final String appKey , boolean consent){
+
         IronSource.setConsent(consent);
         this.appKey = appKey;
-        List<LevelPlay.AdFormat> legacyAdFormats = List.of(LevelPlay.AdFormat.REWARDED);
-        LevelPlayInitRequest initRequest = new LevelPlayInitRequest.Builder(appKey)
-                .withLegacyAdFormats(legacyAdFormats)
+        activity.runOnUiThread(() -> {
+            List<LevelPlay.AdFormat> legacyAdFormats = List.of(LevelPlay.AdFormat.REWARDED);
+            Log.d(TAG,"Ironsource app key:"+appKey);
+            LevelPlayInitRequest initRequest = new LevelPlayInitRequest.Builder(appKey)
+                    .withLegacyAdFormats(legacyAdFormats)
 //                .withUserId("UserID")
-                .build();
-        LevelPlayInitListener initListener = new LevelPlayInitListener() {
-            @Override
-            public void onInitFailed(@NonNull LevelPlayInitError error) {
-                //Recommended to initialize again
-            }
-            @Override
-            public void onInitSuccess(@NonNull LevelPlayConfiguration configuration) {
-                //Create ad objects and load ads
-            }
-        };
-        LevelPlay.init(Objects.requireNonNull(getActivity()), initRequest, initListener);
+                    .build();
+
+            LevelPlayInitListener initListener = new LevelPlayInitListener() {
+                @Override
+                public void onInitFailed(@NonNull LevelPlayInitError error) {
+                    //Recommended to initialize again
+                    emitSignal("on_init_failed",error.getErrorMessage());
+
+                }
+                @Override
+                public void onInitSuccess(@NonNull LevelPlayConfiguration configuration) {
+                    //Create ad objects and load ads
+                    isInitialized = true;
+                    emitSignal("on_inited");
+
+                }
+            };
+            LevelPlay.init(activity, initRequest, initListener);
+        });
+
     }
 
 
@@ -153,6 +165,7 @@ public class GodotIronSource extends GodotPlugin {
         if (!isInitialized){
             Log.d(TAG, "ERROR : You should call init first");
             emitSignal("on_plugin_error","You should call init first");
+
             return;
         }
         activity.runOnUiThread(() -> {
@@ -212,6 +225,11 @@ public class GodotIronSource extends GodotPlugin {
     public void loadRewarded()
     {
         activity.runOnUiThread(() -> {
+            if (!isInitialized){
+                Log.d(TAG, "ERROR : You should call init first");
+                emitSignal("on_plugin_error","You should call init first");
+                return;
+            }
             mRewardedAd.loadAd();
         });
     }
@@ -219,6 +237,11 @@ public class GodotIronSource extends GodotPlugin {
 
     @UsedByGodot
     public void showRewarded(){
+        if (!isInitialized){
+            Log.d(TAG, "ERROR : You should call init first");
+            emitSignal("on_plugin_error","You should call init first");
+            return;
+        }
         if (!mRewardedAd.isAdReady()){
             emitSignal("on_plugin_error","Rewarded is NOT READY");
             return;
@@ -276,7 +299,8 @@ public class GodotIronSource extends GodotPlugin {
                     LevelPlayInterstitialAdListener.super.onAdClosed(levelPlayAdInfo);
 
                     emitSignal("on_interstitial_closed");
-                    mInterstitialAd.loadAd();
+                    if (mInterstitialAd!=null)
+                        mInterstitialAd.loadAd();
                     Log.d(TAG, "onInterstitialAdClosed: ");
                 }
 
@@ -309,6 +333,11 @@ public class GodotIronSource extends GodotPlugin {
 
     @UsedByGodot
     public void showInterstitial(){
+        if (!isInitialized){
+            Log.d(TAG, "ERROR : You should call init first");
+            emitSignal("on_plugin_error","You should call init first");
+            return;
+        }
         // Check that ad is ready and that the placement is not capped
         activity.runOnUiThread(() -> {
             if (mInterstitialAd.isAdReady()) {
@@ -401,6 +430,11 @@ public class GodotIronSource extends GodotPlugin {
     @UsedByGodot
     public void loadBanner()
     {
+        if (!isInitialized){
+            Log.d(TAG, "ERROR : You should call init first");
+            emitSignal("on_plugin_error","You should call init first");
+            return;
+        }
         if(mlevelPlayBanner == null){
             return;
         }
@@ -410,6 +444,11 @@ public class GodotIronSource extends GodotPlugin {
 
     @UsedByGodot
     public void showBanner(){
+        if (!isInitialized){
+            Log.d(TAG, "ERROR : You should call init first");
+            emitSignal("on_plugin_error","You should call init first");
+            return;
+        }
         if(mlevelPlayBanner == null){
             return;
         }
@@ -422,6 +461,11 @@ public class GodotIronSource extends GodotPlugin {
     
     @UsedByGodot
     public void hideBanner() {
+        if (!isInitialized){
+            Log.d(TAG, "ERROR : You should call init first");
+            emitSignal("on_plugin_error","You should call init first");
+            return;
+        }
         if(mlevelPlayBanner == null){
             return;
         }
